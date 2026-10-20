@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  pinHash      String
+  role         Role      @default(LOADER)
+  active       Boolean   @default(true)
+  tokenVersion Int       @default(0)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  transfers    Transfer[]
+  receipts     Receipt[]
+}
+
+enum Role {
+  LOADER
+  KNITTER
+  ADMIN
+}
+
+model Location {
+  id        String          @id @default(cuid())
+  type      LocationType    @unique
+  name      String
+  movements StockMovement[]
+  receipts  Receipt[]
+}
+
+enum LocationType {
+  HOME
+  WAREHOUSE
+  WORKSHOP
+}
+
+model Yarn {
+  id            String         @id @default(cuid())
+  article       String         @unique
+  color         String?
+  composition   String?
+  thickness     String?
+  unit          String         @default("кг")
+  status        YarnStatus     @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  movements     StockMovement[]
+  receiptItems  ReceiptItem[]
+  transferItems TransferItem[]
+}
+
+enum YarnStatus {
+  PENDING
+  ACTIVE
+  ARCHIVED
+}
+
+model Receipt {
+  id         String        @id @default(cuid())
+  admin      User          @relation(fields: [adminId], references: [id])
+  adminId    String
+  location   Location      @relation(fields: [locationId], references: [id])
+  locationId String
+  status     ReceiptStatus @default(SENT)
+  note       String?
+  createdAt  DateTime      @default(now())
+  items      ReceiptItem[]
+  movements  StockMovement[]
+}
+
+enum ReceiptStatus {
+  SENT
+  CANCELLED
+}
+
+model ReceiptItem {
+  id        String  @id @default(cuid())
+  receipt   Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  receiptId String
+  yarn      Yarn    @relation(fields: [yarnId], references: [id])
+  yarnId    String
+  quantity  Decimal @db.Decimal(10, 2)
+}
+
+model Transfer {
+  id        String         @id @default(cuid())
+  loader    User           @relation(fields: [loaderId], references: [id])
+  loaderId  String
+  status    TransferStatus @default(SENT)
+  note      String?
+  createdAt DateTime       @default(now())
+  items     TransferItem[]
+  movements StockMovement[]
+}
+
+enum TransferStatus {
+  SENT
+  CANCELLED
+}
+
+model TransferItem {
+  id               String           @id @default(cuid())
+  transfer         Transfer         @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  transferId       String
+  yarn             Yarn             @relation(fields: [yarnId], references: [id])
+  yarnId           String
+  quantity         Decimal          @db.Decimal(10, 2)
+  fromType         TransferFromType
+  receiptUrl       String?
+  discordMessageId String?
+}
+
+enum TransferFromType {
+  HOME
+  WAREHOUSE
+  CITY_BUY
+}
+
+model StockMovement {
+  id         String    @id @default(cuid())
+  yarn       Yarn      @relation(fields: [yarnId], references: [id])
+  yarnId     String
+  location   Location  @relation(fields: [locationId], references: [id])
+  locationId String
+  quantity   Decimal   @db.Decimal(10, 2)
+  receipt    Receipt?  @relation(fields: [receiptId], references: [id], onDelete: SetNull)
+  receiptId  String?
+  transfer   Transfer? @relation(fields: [transferId], references: [id], onDelete: SetNull)
+  transferId String?
+  isInitial  Boolean   @default(false)
+  reason     String?
+  createdAt  DateTime  @default(now())
+  @@index([yarnId, locationId])
+}
