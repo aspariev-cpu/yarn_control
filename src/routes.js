@@ -79,7 +79,7 @@ router.get('/yarns/:id/stock', auth, async (req, res) => {
 });
 
 // ───── STOCK ─────
-router.get('/stock', auth, async (_req, res) => {
+router.get('/stock', async (_req, res) => {
   res.json(await getStock());
 });
 
