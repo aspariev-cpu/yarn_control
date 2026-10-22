@@ -45,6 +45,11 @@ export const api = {
     request('/admin/yarns', { method: 'POST', body: JSON.stringify(body) }),
   adminUpdateYarn: (id, body) =>
     request(`/admin/yarns/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  
+  // Новый метод для быстрого изменения категории
+  adminUpdateYarnType: (id, type) =>
+    request(`/admin/yarns/${id}`, { method: 'PUT', body: JSON.stringify({ type }) }),
+    
   adminDeleteYarn: (id) =>
     request(`/admin/yarns/${id}`, { method: 'DELETE' }),
 
@@ -57,7 +62,7 @@ export const api = {
     uploadReceipt: async (file, comment) => {
     const formData = new FormData();
     formData.append('photo', file);
-    formData.append('comment', comment || ''); // <--- Передаем комментарий
+    formData.append('comment', comment || '');
     const res = await fetch('/api/upload-receipt', {
       method: 'POST',
       headers: { Authorization: `Bearer ${getToken()}` },
