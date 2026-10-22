@@ -43,6 +43,7 @@ enum LocationType {
 model Yarn {
   id            String         @id @default(cuid())
   article       String         @unique
+  type          String?
   color         String?
   composition   String?
   thickness     String?
