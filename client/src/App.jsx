@@ -4,6 +4,7 @@ import Login from './pages/Login.jsx';
 import LoaderHome from './pages/LoaderHome.jsx';
 import NewTransfer from './pages/NewTransfer.jsx';
 import AdminHome from './pages/AdminHome.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx'; // <-- Импорт нового дашборда
 import AdminUsers from './pages/AdminUsers.jsx';
 import AdminYarns from './pages/AdminYarns.jsx';
 import AdminStock from './pages/AdminStock.jsx';
@@ -42,7 +43,10 @@ export default function App() {
           </Link>
           <div className="flex items-center gap-2">
             {user.role === 'ADMIN' && (
-              <Link to="/admin" className="text-sm text-blue-600 px-2 py-2">Админ</Link>
+              <>
+                <Link to="/admin" className="text-sm text-blue-600 px-2 py-2">Дашборд</Link>
+                <Link to="/admin/menu" className="text-sm text-gray-600 px-2 py-2">Меню</Link>
+              </>
             )}
             {user.role === 'LOADER' && (
               <Link to="/" className="text-sm text-blue-600 px-2 py-2">В цех</Link>
@@ -56,13 +60,19 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route path="/login" element={<Login />} />
+          
+          {/* Роуты грузчика */}
           <Route path="/" element={<RequireRole role="LOADER"><LoaderHome /></RequireRole>} />
           <Route path="/new" element={<RequireRole role="LOADER"><NewTransfer /></RequireRole>} />
-          <Route path="/admin" element={<RequireRole role="ADMIN"><AdminHome /></RequireRole>} />
+          
+          {/* Роуты админа */}
+          <Route path="/admin" element={<RequireRole role="ADMIN"><AdminDashboard /></RequireRole>} />
+          <Route path="/admin/menu" element={<RequireRole role="ADMIN"><AdminHome /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole role="ADMIN"><AdminUsers /></RequireRole>} />
           <Route path="/admin/yarns" element={<RequireRole role="ADMIN"><AdminYarns /></RequireRole>} />
           <Route path="/admin/stock" element={<RequireRole role="ADMIN"><AdminStock /></RequireRole>} />
           <Route path="/admin/transfers" element={<RequireRole role="ADMIN"><AdminTransfers /></RequireRole>} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
