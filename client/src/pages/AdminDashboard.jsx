@@ -1,19 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '../api.js';
 
-// Твой список типов пряжи
 const YARN_TYPES = [
-  'норка',
-  'мираль',
-  'вискоза',
-  'букле',
-  'аванде',
-  'ангора',
-  'объемка',
-  'блэк',
-  'вискоза поетка',
-  'п/шерсть',
-  'хлопок'
+  'норка', 'мираль', 'вискоза', 'букле', 'аванде', 
+  'ангора', 'объемка', 'блэк', 'вискоза поетка', 
+  'п/шерсть', 'хлопок'
 ];
 
 export default function AdminDashboard() {
@@ -21,16 +12,20 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   
-  // Состояние для модального окна редактирования
   const [editingYarn, setEditingYarn] = useState(null);
   const [newType, setNewType] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const loadStock = () => {
-    api.getStock().then((data) => {
+  // Функция загрузки данных
+  const loadStock = async () => {
+    try {
+      const data = await api.getStock();
       setStock(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
       setLoading(false);
-    }).catch(console.error);
+    }
   };
 
   useEffect(() => {
@@ -55,25 +50,28 @@ export default function AdminDashboard() {
 
     const groups = {};
     filtered.forEach(item => {
-      // Если тип не указан, кидаем в "Без категории"
       const categoryName = item.type && item.type.trim() !== '' ? item.type.trim() : 'Без категории';
-
       if (!groups[categoryName]) groups[categoryName] = [];
       groups[categoryName].push(item);
     });
 
-    // Сортируем категории по алфавиту
     return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
   }, [stock, search]);
 
   const handleSaveType = async () => {
-    if (!editingYarn) return;
+    if (!editingYarn || !newType) return;
     setIsSaving(true);
+    
     try {
-      // Передаем выбранный тип
+      // Отправляем запрос на сервер
       await api.adminUpdateYarnType(editingYarn.yarnId, newType);
+      
+      // Закрываем окно
       setEditingYarn(null);
-      loadStock(); // Обновляем данные на экране, чтобы пряжа переехала в новую категорию
+      
+      // ПРИНУДИТЕЛЬНО перезапрашиваем данные с сервера, чтобы пряжа переехала в новую категорию
+      await loadStock();
+      
     } catch (e) {
       alert('Ошибка: ' + e.message);
     } finally {
@@ -87,20 +85,19 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
         
+        {/* Заголовок и Поиск */}
         <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Складской учет</h1>
             <p className="text-gray-500 text-sm mt-1">Все категории на одной странице</p>
           </div>
-          
-          {/* Поиск */}
           <div className="relative w-full md:w-96">
             <input 
               type="text" 
-              placeholder="Поиск по названию, цвету или типу..." 
+              placeholder="Поиск..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 outline-none"
             />
             <svg className="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -108,29 +105,20 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Блок статистики */}
+        {/* Статистика */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 flex flex-wrap gap-8 items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 mb-1">Всего в наличии</p>
             <p className="text-3xl font-bold text-gray-800">{totalStats.total} <span className="text-lg font-normal text-gray-500">меш</span></p>
           </div>
           <div className="flex gap-8 text-sm">
-            <div className="text-center">
-              <p className="text-gray-500 mb-1">Дом</p>
-              <p className="font-semibold text-lg text-gray-800">{totalStats.home}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-500 mb-1">Склад</p>
-              <p className="font-semibold text-lg text-blue-600">{totalStats.warehouse}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-500 mb-1">Цех</p>
-              <p className="font-semibold text-lg text-green-600">{totalStats.workshop}</p>
-            </div>
+            <div className="text-center"><p className="text-gray-500 mb-1">Дом</p><p className="font-semibold text-lg text-gray-800">{totalStats.home}</p></div>
+            <div className="text-center"><p className="text-gray-500 mb-1">Склад</p><p className="font-semibold text-lg text-blue-600">{totalStats.warehouse}</p></div>
+            <div className="text-center"><p className="text-gray-500 mb-1">Цех</p><p className="font-semibold text-lg text-green-600">{totalStats.workshop}</p></div>
           </div>
         </div>
 
-        {/* Список категорий */}
+        {/* Таблицы */}
         <div className="space-y-6">
           {groupedAndFiltered.map(([categoryName, items]) => (
             <div key={categoryName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -149,7 +137,7 @@ export default function AdminDashboard() {
                 <table className="w-full text-left text-sm text-gray-600">
                   <thead className="bg-white border-b border-gray-100 text-xs uppercase text-gray-400">
                     <tr>
-                      <th className="px-5 py-3 font-medium">Наименование пряжи</th>
+                      <th className="px-5 py-3 font-medium">Наименование и Цвет</th>
                       <th className="px-5 py-3 font-medium text-right w-24">Дом</th>
                       <th className="px-5 py-3 font-medium text-right w-24">Склад</th>
                       <th className="px-5 py-3 font-medium text-right w-24">Цех</th>
@@ -162,9 +150,16 @@ export default function AdminDashboard() {
                       const total = Number(item.home) + Number(item.warehouse) + Number(item.workshop);
                       return (
                         <tr key={item.yarnId} className="hover:bg-blue-50/30 transition-colors group">
-                          <td className="px-5 py-3">
+                          <td className="px-5 py-3 flex flex-wrap items-center gap-2">
+                            {/* Название (Артикул) */}
                             <span className="font-medium text-gray-800">{item.article}</span>
-                            {item.color && <span className="text-gray-400 ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full">{item.color}</span>}
+                            
+                            {/* Красивый бейдж для цвета */}
+                            {item.color && (
+                              <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                                {item.color}
+                              </span>
+                            )}
                           </td>
                           <td className="px-5 py-3 text-right">{Number(item.home) || <span className="text-gray-300">0</span>}</td>
                           <td className="px-5 py-3 text-right">{Number(item.warehouse) || <span className="text-gray-300">0</span>}</td>
@@ -174,6 +169,7 @@ export default function AdminDashboard() {
                             <button 
                               onClick={() => {
                                 setEditingYarn(item);
+                                // Если тип уже есть и он есть в списке, ставим его. Если нет — пустую строку.
                                 setNewType(item.type || '');
                               }}
                               className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 text-xs font-medium"
@@ -189,50 +185,43 @@ export default function AdminDashboard() {
               </div>
             </div>
           ))}
-
-          {groupedAndFiltered.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200 text-gray-500">
-              По запросу «{search}» ничего не найдено
-            </div>
-          )}
         </div>
 
       </div>
 
-      {/* Модальное окно редактирования категории */}
+      {/* Модальное окно редактирования */}
       {editingYarn && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Изменить категорию</h3>
-            <p className="text-sm text-gray-500 mb-4">{editingYarn.article} {editingYarn.color ? `(${editingYarn.color})` : ''}</p>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Категория пряжи</h3>
+            <div className="text-sm text-gray-600 mb-4 flex items-center gap-2">
+              <span className="font-medium">{editingYarn.article}</span>
+              {editingYarn.color && <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{editingYarn.color}</span>}
+            </div>
             
-            {/* ВЫПАДАЮЩИЙ СПИСОК */}
+            <label className="block text-xs text-gray-500 mb-1">Выберите тип из списка:</label>
             <select 
               value={newType}
               onChange={(e) => setNewType(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl mb-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none bg-white"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl mb-4 focus:border-blue-500 outline-none bg-white"
             >
-              <option value="" disabled>Выберите тип пряжи</option>
+              <option value="" disabled>Выберите...</option>
               {YARN_TYPES.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
-              {/* Если у пряжи уже есть тип, но его нет в списке (например, старый), добавляем его */}
-              {newType && !YARN_TYPES.includes(newType) && (
-                <option value={newType}>{newType} (текущий)</option>
-              )}
             </select>
             
             <div className="flex gap-3">
               <button 
                 onClick={() => setEditingYarn(null)}
-                className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors"
+                className="flex-1 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-xl"
               >
                 Отмена
               </button>
               <button 
                 onClick={handleSaveType}
                 disabled={isSaving || !newType}
-                className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50"
               >
                 {isSaving ? 'Сохранение...' : 'Сохранить'}
               </button>
