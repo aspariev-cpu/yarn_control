@@ -44,6 +44,7 @@ router.get('/yarns', auth, async (req, res) => {
       ...(q ? { OR: [
         { article: { contains: q, mode: 'insensitive' } },
         { color: { contains: q, mode: 'insensitive' } },
+        { type: { contains: q, mode: 'insensitive' } }, // Поиск по типу
       ] } : {}),
     },
     orderBy: { article: 'asc' },
@@ -100,7 +101,7 @@ router.post('/transfers', auth, requireRole('LOADER', 'ADMIN'), async (req, res)
             yarnId: it.yarnId,
             quantity: new Prisma.Decimal(it.quantity),
             fromType: it.fromType,
-            receiptUrl: it.receiptUrl || null, // ДОБАВЛЕНО!
+            receiptUrl: it.receiptUrl || null,
           })),
         },
       },
@@ -148,7 +149,7 @@ router.post('/upload-receipt', auth, upload.single('photo'), async (req, res) =>
       req.file.buffer, 
       req.file.originalname, 
       req.file.mimetype,
-      req.body.comment // <--- Принимаем комментарий
+      req.body.comment
     );
     
     res.json(result);
@@ -188,23 +189,39 @@ admin.post('/users/:id/deactivate', async (req, res) => {
   res.json({ ok: true });
 });
 
+// СОЗДАНИЕ ПРЯЖИ (Добавлен type)
 admin.post('/yarns', async (req, res) => {
-  const { article, color, composition, thickness, unit } = req.body;
+  const { article, type, color, composition, thickness, unit } = req.body;
   if (!article) return res.status(400).json({ error: 'Нужен артикул' });
   const yarn = await prisma.yarn.create({
-    data: { article, color: color || null, composition: composition || null, thickness: thickness || null, unit: unit || 'кг', status: 'ACTIVE' },
+    data: { 
+      article, 
+      type: type || null, 
+      color: color || null, 
+      composition: composition || null, 
+      thickness: thickness || null, 
+      unit: unit || 'меш', 
+      status: 'ACTIVE' 
+    },
   });
   res.status(201).json(yarn);
 });
 
-// Редактирование пряжи
+// РЕДАКТИРОВАНИЕ ПРЯЖИ (Поддерживает частичное обновление, в т.ч. только type)
 admin.put('/yarns/:id', async (req, res) => {
-  const { article } = req.body;
-  if (!article) return res.status(400).json({ error: 'Введите название пряжи' });
+  const { article, type } = req.body;
   try {
+    const dataToUpdate = {};
+    if (article) dataToUpdate.article = article;
+    if (type !== undefined) dataToUpdate.type = type;
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return res.status(400).json({ error: 'Нет данных для обновления' });
+    }
+
     const updated = await prisma.yarn.update({
       where: { id: req.params.id },
-      data: { article: article }
+      data: dataToUpdate
     });
     res.json(updated);
   } catch (e) {
