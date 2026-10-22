@@ -60,6 +60,7 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/report" element={<AdminDashboard />} />
           
           {/* Роуты грузчика */}
           <Route path="/" element={<RequireRole role="LOADER"><LoaderHome /></RequireRole>} />
