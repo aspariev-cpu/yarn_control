@@ -1,6 +1,21 @@
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '../api.js';
 
+// Твой список типов пряжи
+const YARN_TYPES = [
+  'норка',
+  'мираль',
+  'вискоза',
+  'букле',
+  'аванде',
+  'ангора',
+  'объемка',
+  'блэк',
+  'вискоза поетка',
+  'п/шерсть',
+  'хлопок'
+];
+
 export default function AdminDashboard() {
   const [stock, setStock] = useState([]);
   const [search, setSearch] = useState('');
@@ -40,12 +55,14 @@ export default function AdminDashboard() {
 
     const groups = {};
     filtered.forEach(item => {
+      // Если тип не указан, кидаем в "Без категории"
       const categoryName = item.type && item.type.trim() !== '' ? item.type.trim() : 'Без категории';
 
       if (!groups[categoryName]) groups[categoryName] = [];
       groups[categoryName].push(item);
     });
 
+    // Сортируем категории по алфавиту
     return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
   }, [stock, search]);
 
@@ -53,9 +70,10 @@ export default function AdminDashboard() {
     if (!editingYarn) return;
     setIsSaving(true);
     try {
+      // Передаем выбранный тип
       await api.adminUpdateYarnType(editingYarn.yarnId, newType);
       setEditingYarn(null);
-      loadStock(); // Обновляем данные на экране
+      loadStock(); // Обновляем данные на экране, чтобы пряжа переехала в новую категорию
     } catch (e) {
       alert('Ошибка: ' + e.message);
     } finally {
@@ -79,7 +97,7 @@ export default function AdminDashboard() {
           <div className="relative w-full md:w-96">
             <input 
               type="text" 
-              placeholder="Поиск..." 
+              placeholder="Поиск по названию, цвету или типу..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
@@ -185,17 +203,24 @@ export default function AdminDashboard() {
       {editingYarn && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Категория пряжи</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Изменить категорию</h3>
             <p className="text-sm text-gray-500 mb-4">{editingYarn.article} {editingYarn.color ? `(${editingYarn.color})` : ''}</p>
             
-            <input 
-              type="text" 
+            {/* ВЫПАДАЮЩИЙ СПИСОК */}
+            <select 
               value={newType}
               onChange={(e) => setNewType(e.target.value)}
-              placeholder="Введите тип (например: Ангора)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl mb-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
-              autoFocus
-            />
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl mb-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none bg-white"
+            >
+              <option value="" disabled>Выберите тип пряжи</option>
+              {YARN_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+              {/* Если у пряжи уже есть тип, но его нет в списке (например, старый), добавляем его */}
+              {newType && !YARN_TYPES.includes(newType) && (
+                <option value={newType}>{newType} (текущий)</option>
+              )}
+            </select>
             
             <div className="flex gap-3">
               <button 
@@ -206,7 +231,7 @@ export default function AdminDashboard() {
               </button>
               <button 
                 onClick={handleSaveType}
-                disabled={isSaving}
+                disabled={isSaving || !newType}
                 className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {isSaving ? 'Сохранение...' : 'Сохранить'}
