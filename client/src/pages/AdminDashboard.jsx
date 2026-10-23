@@ -7,7 +7,7 @@ const YARN_TYPES = [
   'п/шерсть', 'хлопок'
 ];
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ isReportMode = false }) {
   const [stock, setStock] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,6 @@ export default function AdminDashboard() {
   const [newType, setNewType] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Функция загрузки данных
   const loadStock = async () => {
     try {
       const data = await api.getStock();
@@ -63,15 +62,9 @@ export default function AdminDashboard() {
     setIsSaving(true);
     
     try {
-      // Отправляем запрос на сервер
       await api.adminUpdateYarnType(editingYarn.yarnId, newType);
-      
-      // Закрываем окно
       setEditingYarn(null);
-      
-      // ПРИНУДИТЕЛЬНО перезапрашиваем данные с сервера, чтобы пряжа переехала в новую категорию
       await loadStock();
-      
     } catch (e) {
       alert('Ошибка: ' + e.message);
     } finally {
@@ -85,7 +78,6 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
         
-        {/* Заголовок и Поиск */}
         <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Складской учет</h1>
@@ -109,6 +101,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 flex flex-wrap gap-8 items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 mb-1">Всего в наличии</p>
+            {/* ТУТ МЕНЯЕМ КГ НА МЕШКИ */}
             <p className="text-3xl font-bold text-gray-800">{totalStats.total} <span className="text-lg font-normal text-gray-500">меш</span></p>
           </div>
           <div className="flex gap-8 text-sm">
@@ -142,7 +135,7 @@ export default function AdminDashboard() {
                       <th className="px-5 py-3 font-medium text-right w-24">Склад</th>
                       <th className="px-5 py-3 font-medium text-right w-24">Цех</th>
                       <th className="px-5 py-3 font-medium text-center w-24">Итого</th>
-                      <th className="px-5 py-3 font-medium w-20"></th>
+                      {!isReportMode && <th className="px-5 py-3 font-medium w-20"></th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -151,10 +144,7 @@ export default function AdminDashboard() {
                       return (
                         <tr key={item.yarnId} className="hover:bg-blue-50/30 transition-colors group">
                           <td className="px-5 py-3 flex flex-wrap items-center gap-2">
-                            {/* Название (Артикул) */}
                             <span className="font-medium text-gray-800">{item.article}</span>
-                            
-                            {/* Красивый бейдж для цвета */}
                             {item.color && (
                               <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
                                 {item.color}
@@ -165,18 +155,19 @@ export default function AdminDashboard() {
                           <td className="px-5 py-3 text-right">{Number(item.warehouse) || <span className="text-gray-300">0</span>}</td>
                           <td className="px-5 py-3 text-right">{Number(item.workshop) || <span className="text-gray-300">0</span>}</td>
                           <td className="px-5 py-3 text-center font-bold text-gray-800 bg-gray-50 rounded">{total}</td>
-                          <td className="px-5 py-3 text-right">
-                            <button 
-                              onClick={() => {
-                                setEditingYarn(item);
-                                // Если тип уже есть и он есть в списке, ставим его. Если нет — пустую строку.
-                                setNewType(item.type || '');
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 text-xs font-medium"
-                            >
-                              Изменить
-                            </button>
-                          </td>
+                          {!isReportMode && (
+                            <td className="px-5 py-3 text-right">
+                              <button 
+                                onClick={() => {
+                                  setEditingYarn(item);
+                                  setNewType(item.type || '');
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 text-xs font-medium"
+                              >
+                                Изменить
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
