@@ -4,11 +4,12 @@ import Login from './pages/Login.jsx';
 import LoaderHome from './pages/LoaderHome.jsx';
 import NewTransfer from './pages/NewTransfer.jsx';
 import AdminHome from './pages/AdminHome.jsx';
-import AdminDashboard from './pages/AdminDashboard.jsx'; // <-- Импорт нового дашборда
+import AdminDashboard from './pages/AdminDashboard.jsx';
 import AdminUsers from './pages/AdminUsers.jsx';
 import AdminYarns from './pages/AdminYarns.jsx';
 import AdminStock from './pages/AdminStock.jsx';
 import AdminTransfers from './pages/AdminTransfers.jsx';
+import KnitterHome from './pages/KnitterHome.jsx';
 import { getUser, clearAuth } from './api.js';
 
 function RequireRole({ role, children }) {
@@ -32,7 +33,7 @@ export default function App() {
   }
 
   const homePath =
-    user?.role === 'ADMIN' ? '/admin' : user?.role === 'LOADER' ? '/' : '/login';
+    user?.role === 'ADMIN' ? '/admin' : user?.role === 'LOADER' ? '/' : user?.role === 'KNITTER' ? '/knitter' : '/login';
 
   return (
     <div className="min-h-full flex flex-col">
@@ -51,6 +52,9 @@ export default function App() {
             {user.role === 'LOADER' && (
               <Link to="/" className="text-sm text-blue-600 px-2 py-2">В цех</Link>
             )}
+            {user.role === 'KNITTER' && (
+              <Link to="/knitter" className="text-sm text-blue-600 px-2 py-2">Моя пряжа</Link>
+            )}
             <button onClick={logout} className="text-sm text-red-600 px-2 py-2 rounded-lg active:bg-red-50">
               Выйти
             </button>
@@ -60,14 +64,19 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/report" element={<AdminDashboard />} />
           
-          {/* Роуты грузчика */}
+          {/* Грузчик */}
           <Route path="/" element={<RequireRole role="LOADER"><LoaderHome /></RequireRole>} />
           <Route path="/new" element={<RequireRole role="LOADER"><NewTransfer /></RequireRole>} />
           
-          {/* Роуты админа */}
-          <Route path="/admin" element={<RequireRole role="ADMIN"><AdminDashboard /></RequireRole>} />
+          {/* Вязальщик */}
+          <Route path="/knitter" element={<RequireRole role="KNITTER"><KnitterHome /></RequireRole>} />
+          
+          {/* Отчет для начальства (без пароля) */}
+          <Route path="/report" element={<AdminDashboard isReportMode={true} />} />
+
+          {/* Админ */}
+          <Route path="/admin" element={<RequireRole role="ADMIN"><AdminDashboard isReportMode={false} /></RequireRole>} />
           <Route path="/admin/menu" element={<RequireRole role="ADMIN"><AdminHome /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole role="ADMIN"><AdminUsers /></RequireRole>} />
           <Route path="/admin/yarns" element={<RequireRole role="ADMIN"><AdminYarns /></RequireRole>} />
