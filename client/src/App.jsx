@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/Login.jsx';
+import KnitterLogin from './pages/KnitterLogin.jsx';
 import LoaderHome from './pages/LoaderHome.jsx';
 import NewTransfer from './pages/NewTransfer.jsx';
 import AdminHome from './pages/AdminHome.jsx';
@@ -64,6 +65,7 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/knitter-login" element={<KnitterLogin />} />
           
           {/* Грузчик */}
           <Route path="/" element={<RequireRole role="LOADER"><LoaderHome /></RequireRole>} />
@@ -72,7 +74,7 @@ export default function App() {
           {/* Вязальщик */}
           <Route path="/knitter" element={<RequireRole role="KNITTER"><KnitterHome /></RequireRole>} />
           
-          {/* Отчет для начальства (без пароля) */}
+          {/* Отчет для начальства */}
           <Route path="/report" element={<AdminDashboard isReportMode={true} />} />
 
           {/* Админ */}
