@@ -126,7 +126,7 @@ export default function AdminStock() {
         <input 
           value={qty} 
           onChange={(e) => setQty(e.target.value)} 
-          placeholder="Количество" 
+          placeholder="Количество (меш)" 
           type="number" 
           className="w-full px-3 py-2 border rounded-lg" 
         />
@@ -149,7 +149,8 @@ export default function AdminStock() {
           <div key={s.yarnId} className="bg-white rounded-xl p-3 border shadow-sm">
             <div className="font-medium text-gray-800">{s.article} {s.color || ''}</div>
             <div className="text-xs text-gray-600 mt-1">
-              Дом: {Number(s.home)} · Склад: {Number(s.warehouse)} · Цех: {Number(s.workshop)} {s.unit}
+              {/* ЗДЕСЬ ЗАМЕНИЛИ {s.unit} НА "меш" */}
+              Дом: {Number(s.home)} · Склад: {Number(s.warehouse)} · Цех: {Number(s.workshop)} меш
             </div>
           </div>
         ))}
