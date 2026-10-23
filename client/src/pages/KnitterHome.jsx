@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
-import { clearAuth, getUser } from '../api.js';
+import { clearAuth } from '../api.js';
 
 export default function KnitterHome() {
   const [stock, setStock] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
-  const user = getUser();
 
   const loadStock = async () => {
     try {
@@ -28,7 +27,7 @@ export default function KnitterHome() {
     
     if (delta === 0) return;
     
-    // Визуально обновляем сразу, чтобы ползунок не дёргался
+    // Визуально обновляем сразу
     setStock(stock.map(s => s.yarnId === item.yarnId ? { ...s, workshop: newValue } : s));
     
     try {
@@ -36,8 +35,7 @@ export default function KnitterHome() {
       setMsg(`Успешно ${delta > 0 ? 'добавлено' : 'списано'} ${Math.abs(delta)} меш`);
       setTimeout(() => setMsg(''), 2000);
     } catch (e) {
-      // Если ошибка — откатываем
-      loadStock();
+      loadStock(); // Откат при ошибке
       alert('Ошибка: ' + e.message);
     }
   };
@@ -75,14 +73,16 @@ export default function KnitterHome() {
             
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-500">В наличии:</span>
-              <span className="text-2xl font-bold text-blue-600">{Number(item.workshop)} <span className="text-sm text-gray-500">{item.unit}</span></span>
+              {/* ТУТ МЕНЯЕМ КГ НА МЕШКИ */}
+              <span className="text-2xl font-bold text-blue-600">
+                {Number(item.workshop)} <span className="text-sm text-gray-500">меш</span>
+              </span>
             </div>
 
-            {/* Ползунок */}
             <input 
               type="range" 
               min="0" 
-              max="200" // Максимум, чтобы можно было ввести стартовые остатки
+              max="200" 
               value={Number(item.workshop)} 
               onChange={(e) => handleSliderChange(item, Number(e.target.value))}
               className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
