@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() }); // храним в памяти
+const upload = multer({ storage: multer.memoryStorage() });
 const { Prisma } = require('@prisma/client');
 const { prisma } = require('./db');
 const { validatePin, hashPin, verifyPin, signToken, auth, requireRole } = require('./auth');
@@ -18,6 +18,18 @@ router.get('/users', async (_req, res) => {
   res.json(users);
 });
 
+// Вход для вязальщиков (без PIN)
+router.post('/login-knitter', async (req, res) => {
+  const { userId } = req.body;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.role !== 'KNITTER') return res.status(401).json({ error: 'Доступ только для вязальщиков' });
+  
+  // Генерируем токен на 90 дней
+  const token = signToken(user);
+  res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+});
+
+// Вход для админа/грузчика по PIN
 router.post('/login', async (req, res) => {
   const { userId, pin } = req.body;
   if (!userId || !validatePin(pin)) return res.status(400).json({ error: 'Нужен userId и PIN из 4 цифр' });
@@ -44,7 +56,7 @@ router.get('/yarns', auth, async (req, res) => {
       ...(q ? { OR: [
         { article: { contains: q, mode: 'insensitive' } },
         { color: { contains: q, mode: 'insensitive' } },
-        { type: { contains: q, mode: 'insensitive' } }, // Поиск по типу
+        { type: { contains: q, mode: 'insensitive' } },
       ] } : {}),
     },
     orderBy: { article: 'asc' },
@@ -139,19 +151,35 @@ router.post('/transfers/:id/cancel', auth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ───── ИЗМЕНЕНИЕ ПРЯЖИ В ЦЕХУ (вязальщик) ─────
+router.post('/workshop/adjust', auth, requireRole('KNITTER', 'ADMIN'), async (req, res) => {
+  const { yarnId, delta } = req.body;
+  if (!yarnId || delta === 0) return res.status(400).json({ error: 'Неверные данные' });
+
+  try {
+    const workshop = await prisma.location.findUniqueOrThrow({ where: { type: 'WORKSHOP' } });
+    
+    await prisma.stockMovement.create({
+      data: {
+        yarnId,
+        locationId: workshop.id,
+        quantity: new Prisma.Decimal(delta),
+        reason: `Корректировка вязальщиком: ${delta > 0 ? 'добавил' : 'списал'}`,
+      },
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ───── UPLOAD RECEIPT ─────
 router.post('/upload-receipt', auth, upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Файл не получен' });
-    
     const { uploadReceiptPhoto } = require('./bot');
-    const result = await uploadReceiptPhoto(
-      req.file.buffer, 
-      req.file.originalname, 
-      req.file.mimetype,
-      req.body.comment
-    );
-    
+    const result = await uploadReceiptPhoto(req.file.buffer, req.file.originalname, req.file.mimetype, req.body.comment);
     res.json(result);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -189,40 +217,24 @@ admin.post('/users/:id/deactivate', async (req, res) => {
   res.json({ ok: true });
 });
 
-// СОЗДАНИЕ ПРЯЖИ (Добавлен type)
 admin.post('/yarns', async (req, res) => {
   const { article, type, color, composition, thickness, unit } = req.body;
   if (!article) return res.status(400).json({ error: 'Нужен артикул' });
   const yarn = await prisma.yarn.create({
-    data: { 
-      article, 
-      type: type || null, 
-      color: color || null, 
-      composition: composition || null, 
-      thickness: thickness || null, 
-      unit: unit || 'меш', 
-      status: 'ACTIVE' 
-    },
+    data: { article, type: type || null, color: color || null, composition: composition || null, thickness: thickness || null, unit: unit || 'меш', status: 'ACTIVE' },
   });
   res.status(201).json(yarn);
 });
 
-// РЕДАКТИРОВАНИЕ ПРЯЖИ (Поддерживает частичное обновление, в т.ч. только type)
 admin.put('/yarns/:id', async (req, res) => {
   const { article, type } = req.body;
   try {
     const dataToUpdate = {};
     if (article) dataToUpdate.article = article;
     if (type !== undefined) dataToUpdate.type = type;
+    if (Object.keys(dataToUpdate).length === 0) return res.status(400).json({ error: 'Нет данных для обновления' });
 
-    if (Object.keys(dataToUpdate).length === 0) {
-      return res.status(400).json({ error: 'Нет данных для обновления' });
-    }
-
-    const updated = await prisma.yarn.update({
-      where: { id: req.params.id },
-      data: dataToUpdate
-    });
+    const updated = await prisma.yarn.update({ where: { id: req.params.id }, data: dataToUpdate });
     res.json(updated);
   } catch (e) {
     if (e.code === 'P2002') return res.status(400).json({ error: 'Такая пряжа уже есть' });
@@ -230,13 +242,9 @@ admin.put('/yarns/:id', async (req, res) => {
   }
 });
 
-// Удаление пряжи (архивация)
 admin.delete('/yarns/:id', async (req, res) => {
   try {
-    await prisma.yarn.update({
-      where: { id: req.params.id },
-      data: { status: 'ARCHIVED' }
-    });
+    await prisma.yarn.update({ where: { id: req.params.id }, data: { status: 'ARCHIVED' } });
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
