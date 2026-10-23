@@ -20,7 +20,26 @@ async function main() {
     update: {},
     create: { id: 'loader-1', name: 'Иван (грузчик)', pinHash: await bcrypt.hash('2222', 10), role: 'LOADER' },
   });
-  console.log('Пользователи готовы (админ 1111, грузчик 2222)');
+
+  // ── ДОБАВЛЕНЫ ВЯЗАЛЬЩИКИ ──
+  await prisma.user.upsert({
+    where: { id: 'knitter-1' },
+    update: {},
+    create: { id: 'knitter-1', name: 'Аслан', pinHash: 'no-pin', role: 'KNITTER' },
+  });
+  await prisma.user.upsert({
+    where: { id: 'knitter-2' },
+    update: {},
+    create: { id: 'knitter-2', name: 'Ахмат', pinHash: 'no-pin', role: 'KNITTER' },
+  });
+  await prisma.user.upsert({
+    where: { id: 'knitter-3' },
+    update: {},
+    create: { id: 'knitter-3', name: 'Игорь', pinHash: 'no-pin', role: 'KNITTER' },
+  });
+  // ────────────────────────────
+
+  console.log('Пользователи готовы (админ 1111, грузчик 2222, + 3 вязальщика)');
 
   const yarnsData = [
     { article: '32/2-сер', color: 'серая', composition: 'шерсть 50 / акрил 50', thickness: '32/2' },
