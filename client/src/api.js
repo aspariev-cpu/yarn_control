@@ -21,45 +21,34 @@ async function request(path, options = {}) {
 
 export const api = {
   getUsers: () => request('/users'),
-  login: (userId, pin) =>
-    request('/login', { method: 'POST', body: JSON.stringify({ userId, pin }) }),
+  login: (userId, pin) => request('/login', { method: 'POST', body: JSON.stringify({ userId, pin }) }),
+  loginKnitter: (userId) => request('/login-knitter', { method: 'POST', body: JSON.stringify({ userId }) }),
   me: () => request('/me'),
   getStock: () => request('/stock'),
   getYarns: (q = '') => request(`/yarns?q=${encodeURIComponent(q)}`),
   getRecentYarns: () => request('/yarns/recent'),
-  createTransfer: (items, note) =>
-    request('/transfers', { method: 'POST', body: JSON.stringify({ items, note }) }),
+  createTransfer: (items, note) => request('/transfers', { method: 'POST', body: JSON.stringify({ items, note }) }),
   getMyTransfers: () => request('/transfers/my'),
-  cancelTransfer: (id) =>
-    request(`/transfers/${id}/cancel`, { method: 'POST' }),
+  cancelTransfer: (id) => request(`/transfers/${id}/cancel`, { method: 'POST' }),
+  
+  // Метод для изменения количества
+  adjustWorkshop: (yarnId, delta) => request('/workshop/adjust', { method: 'POST', body: JSON.stringify({ yarnId, delta }) }),
 
   adminUsers: () => request('/admin/users'),
-  adminCreateUser: (body) =>
-    request('/admin/users', { method: 'POST', body: JSON.stringify(body) }),
-  adminResetPin: (id, pin) =>
-    request(`/admin/users/${id}/pin`, { method: 'POST', body: JSON.stringify({ pin }) }),
-  adminDeactivate: (id) =>
-    request(`/admin/users/${id}/deactivate`, { method: 'POST' }),
+  adminCreateUser: (body) => request('/admin/users', { method: 'POST', body: JSON.stringify(body) }),
+  adminResetPin: (id, pin) => request(`/admin/users/${id}/pin`, { method: 'POST', body: JSON.stringify({ pin }) }),
+  adminDeactivate: (id) => request(`/admin/users/${id}/deactivate`, { method: 'POST' }),
   
-  adminCreateYarn: (body) =>
-    request('/admin/yarns', { method: 'POST', body: JSON.stringify(body) }),
-  adminUpdateYarn: (id, body) =>
-    request(`/admin/yarns/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-  
-  // Новый метод для быстрого изменения категории
-  adminUpdateYarnType: (id, type) =>
-    request(`/admin/yarns/${id}`, { method: 'PUT', body: JSON.stringify({ type }) }),
-    
-  adminDeleteYarn: (id) =>
-    request(`/admin/yarns/${id}`, { method: 'DELETE' }),
+  adminCreateYarn: (body) => request('/admin/yarns', { method: 'POST', body: JSON.stringify(body) }),
+  adminUpdateYarn: (id, body) => request(`/admin/yarns/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  adminUpdateYarnType: (id, type) => request(`/admin/yarns/${id}`, { method: 'PUT', body: JSON.stringify({ type }) }),
+  adminDeleteYarn: (id) => request(`/admin/yarns/${id}`, { method: 'DELETE' }),
 
-  adminReceipt: (body) =>
-    request('/admin/receipts', { method: 'POST', body: JSON.stringify(body) }),
+  adminReceipt: (body) => request('/admin/receipts', { method: 'POST', body: JSON.stringify(body) }),
   adminTransfers: () => request('/admin/transfers'),
   adminReport: () => request('/admin/reports/stock', { method: 'POST' }),
 
-  // Новый метод для загрузки фото чека
-    uploadReceipt: async (file, comment) => {
+  uploadReceipt: async (file, comment) => {
     const formData = new FormData();
     formData.append('photo', file);
     formData.append('comment', comment || '');
