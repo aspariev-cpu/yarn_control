@@ -1,17 +1,17 @@
 meta:
-  environment: nodejs
+  environment: node
   toolchain:
     name: npm
-    version: 18 # или 20, если у тебя Node 20
+    version: 18
 
 build:
-  # Устанавливаем зависимости и собираем фронтенд
-  script: |
-    npm install
+  # Здесь выполняем сборку фронтенда (React) и генерацию Prisma
+  additionalCommands: |
     cd client && npm install && npm run build && cd ..
+    npx prisma generate
 
 run:
-  # Запускаем сервер (он раздаст собранный фронтенд из client/dist)
-  script: node src/index.js
-  containerPort: 3000 # Порт, который слушает твой Express (process.env.PORT)
-  persistenceMount: /data
+  # Запускаем сервер (миграции лучше делать вручную или через отдельную команду, 
+  # так как run должен просто запускать процесс)
+  scriptName: src/index.js
+  containerPort: 3000
