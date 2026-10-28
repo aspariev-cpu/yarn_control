@@ -5,13 +5,27 @@ meta:
     version: 18
 
 build:
-  # Устанавливаем зависимости и собираем фронтенд без использования cd
   additionalCommands: |
     npm install --prefix client
     npm run build --prefix client
     npx prisma generate
 
+# Вот эта секция — самое важное!
+files:
+  include:
+    - client/dist  # Принудительно включаем собранный фронтенд в архив
+    - src
+    - prisma
+    - package.json
+    - package-lock.json
+  exclude:
+    - client/src
+    - client/node_modules
+    - client/public
+    - client/package.json
+    - client/vite.config.js
+    - client/index.html
+
 run:
-  # Запускаем сервер. Миграции лучше применить один раз вручную (см. ниже)
   scriptName: src/index.js
   containerPort: 3000
