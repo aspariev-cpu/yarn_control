@@ -23,10 +23,32 @@ app.get('/health', async (_req, res) => {
 app.use('/api', routes);
 
 // Раздача собранного фронта (если есть)
-const clientDist = path.join(__dirname, '..', 'client', 'dist');
-if (fs.existsSync(clientDist)) {
+// Раздача собранного фронта (если есть)
+// Ищем папку dist сначала в текущей директории, потом на уровень выше
+const possiblePaths = [
+  path.join(process.cwd(), 'client', 'dist'),
+  path.join(__dirname, '..', 'client', 'dist'),
+  path.join(process.cwd(), 'dist')
+];
+
+let clientDist = null;
+for (const p of possiblePaths) {
+  if (fs.existsSync(p)) {
+    clientDist = p;
+    console.log('✅ Найдена папка с фронтендом:', p); // Это покажет в логах, где он ее нашел
+    break;
+  }
+}
+
+if (clientDist) {
   app.use(express.static(clientDist));
-  app.get('*', (_req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+  // Отдаем index.html на любые GET-запросы, которые не начинаются с /api
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+} else {
+  console.log('❌ ВНИМАНИЕ: Папка client/dist не найдена!');
 }
 
 app.use((err, _req, res, _next) => {
