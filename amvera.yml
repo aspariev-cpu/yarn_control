@@ -1,0 +1,17 @@
+meta:
+  environment: nodejs
+  toolchain:
+    name: npm
+    version: 18 # или 20, если у тебя Node 20
+
+build:
+  # Устанавливаем зависимости и собираем фронтенд
+  script: |
+    npm install
+    cd client && npm install && npm run build && cd ..
+
+run:
+  # Запускаем сервер (он раздаст собранный фронтенд из client/dist)
+  script: node src/index.js
+  containerPort: 3000 # Порт, который слушает твой Express (process.env.PORT)
+  persistenceMount: /data
