@@ -5,13 +5,13 @@ meta:
     version: 18
 
 build:
-  # Здесь выполняем сборку фронтенда (React) и генерацию Prisma
+  # Устанавливаем зависимости и собираем фронтенд без использования cd
   additionalCommands: |
-    cd client && npm install && npm run build && cd ..
+    npm install --prefix client
+    npm run build --prefix client
     npx prisma generate
 
 run:
-  # Запускаем сервер (миграции лучше делать вручную или через отдельную команду, 
-  # так как run должен просто запускать процесс)
+  # Запускаем сервер. Миграции лучше применить один раз вручную (см. ниже)
   scriptName: src/index.js
   containerPort: 3000
